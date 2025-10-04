@@ -4,13 +4,34 @@
 
 @section('content')
 
-<div class="header" style="display: flex; flex-direction: column;">
-    <div style="display: flex; gap: 15px;">
+@push('styles')
+<style>
+.header {
+    display: flex;;
+    flex-direction: column;
+}
+
+.header div {
+    display: flex;;
+    gap: 15px;
+}
+
+.header p {
+    margin-top: -10px;
+}
+
+.header strong {
+    font-weight: 550;
+}
+</style>
+@endpush
+
+<div class="header">
+    <div>
         <div class="header-text">
             <h1>{{ $kra_title }}</h1>
         </div>
         <div class="criterion-selector">
-            {{-- Filter dropdown --}}
             <select id="filter-select" name="filter">
                 <option value="all" selected>All Statuses</option>
                 <option value="unscored">Unscored</option>
@@ -18,7 +39,7 @@
             </select>
         </div>
     </div>
-    <p style="margin-top: -10px;" class="text-muted">Evaluating submissions for: <strong style="font-weight: 550">{{ $application->user->name }}</strong></p>
+    <p>Evaluating submissions for: <strong>{{ $application->user->name }}</strong></p>
 </div>
 
 <div class="performance-metric-container">
@@ -27,11 +48,10 @@
             <tr>
                 <th>ID</th>
                 <th>Title</th>
-                <th>Details</th>
+                <th>Category</th>
                 <th>Date Uploaded</th>
                 <th>Score</th>
                 <th>
-                    {{-- Search bar form --}}
                     <div class="search-bar-container">
                         <form id="search-form" action="" method="GET">
                             <input type="text" name="search" placeholder="Search by title...">
@@ -72,7 +92,6 @@
         </div>
         <form id="score-modal-form">
             @csrf
-            {{-- Hidden inputs to store context --}}
             <input type="hidden" name="submission_id">
             <input type="hidden" name="kra_slug">
 

@@ -317,3 +317,15 @@
   margin-bottom: 20px;
   font-size: 1.1em;
 }
+
+/* SCORE STATUS STYLING */
+.to-be-evaluated-score {
+  background-color: #7b8e98;
+  padding: 0.25em 0.6em; 
+  border-radius: 1em;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #f3f3f3;
+  text-transform: capitalize;
+  word-wrap: unset;
+}

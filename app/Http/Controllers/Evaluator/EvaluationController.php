@@ -22,8 +22,10 @@ class EvaluationController extends Controller
     public function index(Request $request)
     {
         $perPage = 5;
-        $status = $request->input('status', 'pending evaluation');
-        $query = Application::with('user');
+        $status = $request->input('status', 'all');
+
+        $query = Application::with('user')->where('status', '!=', 'draft');
+
         if ($status && $status !== 'all') {
             $query->where('status', $status);
         }
@@ -59,7 +61,25 @@ class EvaluationController extends Controller
     public function showApplication(Application $application)
     {
         $application->load('user')
-            ->loadCount(['instructions', 'researches', 'extensions', 'professionalDevelopments']);
+            ->loadCount([
+                'instructions',
+                'researches',
+                'extensions',
+                'professionalDevelopments',
+                'instructions as instructions_scored_count' => function ($query) {
+                    $query->whereNotNull('score');
+                },
+                'researches as researches_scored_count' => function ($query) {
+                    $query->whereNotNull('score');
+                },
+                'extensions as extensions_scored_count' => function ($query) {
+                    $query->whereNotNull('score');
+                },
+                'professionalDevelopments as professional_developments_scored_count' => function ($query) {
+                    $query->whereNotNull('score');
+                }
+            ]);
+
         return view('evaluator.application-details', compact('application'));
     }
 
@@ -370,38 +390,32 @@ class EvaluationController extends Controller
             $application->kra3_score = $application->extensions()->sum('score');
             $application->kra4_score = $application->professionalDevelopments()->sum('score');
 
-            // Task 3.2: Implement Weighted Score Calculation
-            $user = $application->user;
-            if (!$user || !$user->faculty_rank) {
-                throw new \Exception("User or faculty rank not found for application ID: " . $application->id);
-            }
+            // Task 3.2: Calculate the final CCE Document Score using the AHPService.
+            $finalScore = $ahpService->calculateCceDocumentScore($application);
 
-            // Determine the rank category for the AHPService
-            $fullRank = $user->faculty_rank;
-            $rankCategory = 'Instructor'; // Default case
-            if (str_starts_with($fullRank, 'Assistant Professor')) {
-                $rankCategory = 'Assistant Professor';
-            } elseif (str_starts_with($fullRank, 'Associate Professor')) {
-                $rankCategory = 'Associate Professor';
-            } elseif (str_starts_with($fullRank, 'Professor')) {
-                $rankCategory = 'Professor';
-            }
 
-            $finalScore = $ahpService->calculateFinalScore($application, $rankCategory);
+            // Task 3.3: Determine the rank range.
+            // Get the minimum rank based on the current score.
+            $minRank = $ahpService->getRankFromScore($finalScore);
 
-            // Task 3.3: Implement Rank Determination & Finalize
-            $highestRank = $ahpService->getRankFromScore($finalScore);
+            // Calculate a hypothetical score to determine the maximum possible rank.
+            $scoreForMaxRank = $finalScore + 200;
+            $maxRank = $ahpService->getRankFromScore($scoreForMaxRank);
+
+            // Create the range string. If min and max ranks are the same, just show one.
+            $rankRange = ($minRank === $maxRank) ? $minRank : "{$minRank} - {$maxRank}";
 
             $application->final_score = $finalScore;
-            $application->highest_attainable_rank = $highestRank;
+            $application->highest_attainable_rank = $rankRange;
             $application->status = 'evaluated';
 
             $application->save();
 
+            // Update the success message to reflect the change.
             $successMessage = sprintf(
-                "Evaluation complete! Final CCE Score: %.2f. Highest Attainable Rank: %s.",
+                "Evaluation complete! Final CCE Document Score: %.2f. Attainable Rank Range (based on CCE documents): %s.",
                 $finalScore,
-                $highestRank
+                $rankRange
             );
 
             return redirect()->route('evaluator.application.details', $application)

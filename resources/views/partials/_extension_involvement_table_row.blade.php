@@ -3,7 +3,13 @@
     <td>{{ $item->id }}</td>
     <td>{{ $item->title }}</td>
     <td>{{ $item->role }}</td>
-    <td>{{ $item->score ?? 'TBE' }}</td>
+    @if ($item->score === null)
+    <td>
+        <span class="to-be-evaluated-score">To Be Evaluated</span>
+    </td>
+    @else
+    <td>{{ $item->score }}</td>
+    @endif
     <td>
         <div class="action-buttons">
             <button

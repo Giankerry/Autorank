@@ -212,7 +212,6 @@
 
 .evaluation-progress-bottom-note {
     height: auto;
-    width: 50%;
     display: flex;
     justify-content: end;
 }

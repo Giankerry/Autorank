@@ -1,65 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     /*
     |--------------------------------------------------------------------------
-    | FOR COPYING TEXTS TO CLIPBOARD
-    |--------------------------------------------------------------------------
-    */
-    const copyToast = document.getElementById('copyToast');
-
-    function showCopiedToast(duration = 1250) {
-        if (!copyToast) {
-            console.error('Toast element with ID "copyToast" not found.');
-            return;
-        }
-
-        copyToast.classList.add('show');
-
-        setTimeout(() => {
-            copyToast.classList.remove('show');
-        }, duration);
-    }
-
-    async function copyInstructorsName() {
-        const usernameElement = document.getElementById('username');
-
-        if (usernameElement) {
-            const textToCopy = usernameElement.innerText;
-
-            // For older browsers
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                try {
-                    await navigator.clipboard.writeText(textToCopy);
-                    showCopiedToast();
-                } catch (err) {
-                    console.error('Failed to copy instructor\'s name: ', err);
-                }
-            }
-        }
-    }
-
-    async function copyInstructorNumber() {
-        const instructorsNumberElement = document.getElementById('instructorsNumber');
-
-        if (instructorsNumberElement) {
-            const textToCopy = instructorsNumberElement.innerText;
-
-            // For older browsers
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                try {
-                    await navigator.clipboard.writeText(textToCopy);
-                    showCopiedToast();
-                } catch (err) {
-                    console.error('Failed to copy instructor\'s number: ', err);
-                }
-            }
-        }
-    }
-
-    window.copyInstructorsName = copyInstructorsName;
-    window.copyInstructorNumber = copyInstructorNumber;
-
-    /*
-    |--------------------------------------------------------------------------
     | FOR TOGGLING HIDDEN MENU
     |--------------------------------------------------------------------------
     */

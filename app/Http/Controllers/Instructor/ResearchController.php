@@ -205,7 +205,6 @@ class ResearchController extends Controller
                     'nullable',
                     'string',
                     'max:255',
-                    Rule::requiredIf(fn() => in_array($request->input('category'), ['Journal Article']))
                 ],
                 'proof_file'     => 'required|file|mimes:pdf,doc,docx,jpg,png|max:5120',
             ];

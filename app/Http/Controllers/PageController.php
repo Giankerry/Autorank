@@ -18,24 +18,6 @@ class PageController extends Controller
         return view('dashboard');
     }
 
-    public function showProfilePage()
-    {
-        $user = Auth::user();
-
-        if ($user) {
-            // For the user's own profile page, isOwnProfile will always be true
-            $isOwnProfile = true;
-
-            return view('profile-page', [
-                'user' => $user,
-                'isOwnProfile' => $isOwnProfile,
-            ]);
-        } else {
-            // Redirect to signin if not logged in
-            return redirect()->route('signin-page')->with('error', 'You must be logged in to view your profile.');
-        }
-    }
-
     public function showAllUsersPage()
     {
         $users = User::with('roles.permissions')->get();

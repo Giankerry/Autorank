@@ -42,6 +42,7 @@
     <script src="{{ asset('js/system-settings-scripts.js') }}"></script>
 
     @stack('page-scripts')
+    @stack('styles')
 </body>
 
 </html>

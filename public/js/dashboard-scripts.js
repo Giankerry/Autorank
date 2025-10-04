@@ -1,32 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
     /*
     |--------------------------------------------------------------------------
-    | REQUIREMENTS DROPDOWN LOGIC
-    |--------------------------------------------------------------------------
-    */
-    document.querySelectorAll('.details-button').forEach(button => {
-        button.addEventListener('click', function (event) {
-            event.stopPropagation();
-            let content = this.nextElementSibling;
-            const isVisible = content.style.display === 'block';
-            document.querySelectorAll('.dropdown-content').forEach(c => {
-                c.style.display = 'none';
-            });
-            if (!isVisible) {
-                content.style.display = 'block';
-            }
-        });
-    });
-
-    // Hide dropdowns when clicking anywhere else on the page
-    window.addEventListener('click', function (e) {
-        document.querySelectorAll('.dropdown-content').forEach(content => {
-            content.style.display = 'none';
-        });
-    });
-
-    /*
-    |--------------------------------------------------------------------------
     | SLOTS MODAL LOGIC (For Admins)
     |--------------------------------------------------------------------------
     */

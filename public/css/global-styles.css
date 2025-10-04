@@ -70,7 +70,7 @@ body {
 
 a {
     text-decoration: none;
-    color: white;
+    color: var(--pageTextColor);
 }
 
 button {
@@ -92,6 +92,10 @@ nav {
     width: 100vw;
     height: auto;
     z-index: 1000;
+} 
+
+nav a {
+    color: white;
 }
 
 .navbar-container {

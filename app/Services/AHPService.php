@@ -70,6 +70,10 @@ class AHPService
         'Instructor I' => 66,
     ];
 
+    /**
+     * For the Strategic Modeler feature,
+     * which will allow administrators to run "what-if" scenarios with different institutional priorities.
+     */
     protected const RANK_KRA_WEIGHTS = [
         'Instructor' => [
             'kra1' => 0.80,
@@ -98,13 +102,13 @@ class AHPService
     ];
 
     /**
-     * Calculates the final weighted score for an application based on the user's rank.
+     * Calculates the final CCE Document Score for an application.
+     * This is the sum of the capped scores from the four KRAs.
      *
      * @param Application $application The application with pre-aggregated KRA scores.
-     * @param string $rankCategory The general rank category (e.g., 'Professor', 'Instructor').
-     * @return float The final, weighted CCE score.
+     * @return float The final CCE Document Score.
      */
-    public function calculateFinalScore(Application $application, string $rankCategory): float
+    public function calculateCceDocumentScore(Application $application): float
     {
         // Step 1: Get the raw KRA scores from the application model.
         $rawScores = [
@@ -122,28 +126,21 @@ class AHPService
             'kra4' => min($rawScores['kra4'], self::KRA_CAPS['kra4']['total']),
         ];
 
-        // Step 3: Get the AHP weights for the applicant's rank category.
-        if (!isset(self::RANK_KRA_WEIGHTS[$rankCategory])) {
-            Log::error("AHP Calculation Failed: No weights found for rank category '{$rankCategory}' for Application ID {$application->id}");
-            return 0.0;
-        }
-        $weights = self::RANK_KRA_WEIGHTS[$rankCategory];
-
-        // Step 4: Calculate the final weighted score.
-        $finalScore = 0;
-        $finalScore += $cappedScores['kra1'] * $weights['kra1'];
-        $finalScore += $cappedScores['kra2'] * $weights['kra2'];
-        $finalScore += $cappedScores['kra3'] * $weights['kra3'];
-        $finalScore += $cappedScores['kra4'] * $weights['kra4'];
+        // Step 3: Calculate the final score by summing the capped scores.
+        // This is the correct procedure according to NBC 461.
+        $finalScore = array_sum($cappedScores);
 
         return (float) $finalScore;
     }
 
     /**
-     * Determines the highest attainable rank based on a given CCE score.
+     * Determines the highest attainable rank based on a given score.
+     * NOTE: This method compares the CCE Document Score (max 340) against the
+     * official RANK_THRESHOLDS which are based on the TOTAL score (CCE + other criteria).
+     * The result is a preliminary determination and must be contextualized in the UI.
      *
-     * @param float $score The final CCE score.
-     * @return string The name of the highest rank achieved.
+     * @param float $score The CCE Document Score.
+     * @return string The name of the highest rank achieved based on the CCE document score alone.
      */
     public function getRankFromScore(float $score): string
     {

@@ -15,6 +15,7 @@ use App\Http\Controllers\Instructor\InstructionController;
 use App\Http\Controllers\Instructor\ProfessionalDevelopmentController;
 use App\Http\Controllers\Instructor\ResearchController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserPreferenceController;
 
 /*
@@ -49,9 +50,12 @@ Route::get('/css/dynamic-styles.css', [SystemSettingsController::class, 'generat
 Route::middleware(['auth'])->group(function () {
     // General Authenticated Routes
     Route::get('/dashboard', [PageController::class, 'showDashboard'])->name('dashboard');
-    Route::get('/profile', [PageController::class, 'showProfilePage'])->name('profile-page');
+    Route::get('/profile', [ProfileController::class, 'showProfilePage'])->name('profile-page');
     Route::get('/settings', [SystemSettingsController::class, 'showSystemSettings'])->name('system-settings');
     Route::post('/user/preference/theme', [UserPreferenceController::class, 'updateTheme'])->name('user.preference.theme.update');
+
+    // Profile Dashboard AJAX.
+    Route::get('/application-data/{application}', [ProfileController::class, 'getApplicationData'])->name('api.application.data');
 
     // Google Drive Access Management
     Route::post('/settings/google-drive/revoke', [SocialiteLoginController::class, 'revokeGoogleToken'])->name('settings.google.revoke');

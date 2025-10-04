@@ -4,9 +4,13 @@
     <td>{{ $item->service_type }}</td>
     <td>{{ $item->role }}</td>
     <td>{{ $item->level }}</td>
-    <td @if(($item->score ?? 'TBE') === 'TBE') style="color: gray;" title="To be evaluated." @endif>
-    {{ $item->score ?? 'TBE' }}
+    @if ($item->score === null)
+    <td>
+        <span class="to-be-evaluated-score">To Be Evaluated</span>
     </td>
+    @else
+    <td>{{ $item->score }}</td>
+    @endif
     <td>
         <div class="action-buttons">
             <button

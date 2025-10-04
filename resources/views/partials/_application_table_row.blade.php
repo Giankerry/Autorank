@@ -11,9 +11,15 @@
     </td>
     <td>
         <div class="action-buttons">
+            @if ($application->status === 'pending evaluation')
             <a href="{{ route('evaluator.application.details', ['application' => $application->id]) }}" class="btn btn-primary">
                 <button>Evaluate</button>
             </a>
+            @else
+            <a href="{{ route('evaluator.application.details', ['application' => $application->id]) }}" class="btn btn-primary">
+                <button>View</button>
+            </a>
+            @endif
         </div>
     </td>
 </tr>

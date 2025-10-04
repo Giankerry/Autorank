@@ -3,22 +3,7 @@
     <td>{{ $item->id }}</td>
     <td>{{ $item->title ?? 'N/A' }}</td>
     <td>
-        @switch($kra_slug)
-            @case('instruction')
-                Criterion: {{ ucwords(str_replace('-', ' ', $item->criterion)) }}
-                @break
-            @case('research')
-                Category: {{ $item->category ?? 'N/A' }}
-                @break
-            @case('extension')
-                Role: {{ $item->role ?? 'N/A' }}
-                @break
-            @case('professional-development')
-                Type: {{ $item->membership_type ?? $item->type ?? 'N/A' }}
-                @break
-            @default
-                No details available.
-        @endswitch
+        {{ ucwords(str_replace('-', ' ', $item->criterion)) }}
     </td>
     <td>{{ $item->created_at->format('F d, Y') }}</td>
     <td class="score-cell" id="score-cell-{{ $item->id }}">

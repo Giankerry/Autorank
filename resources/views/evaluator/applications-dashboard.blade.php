@@ -4,6 +4,29 @@
 
 @section('content')
 
+@push('styles')
+<style>
+.status-badge {
+    padding: 0.25em 0.6em;
+    border-radius: 1em;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #fff;
+    text-transform: capitalize;
+    word-wrap: unset;
+}
+
+.status-pending-evaluation {
+    background-color: #FFC107;
+    color: #272727;
+}
+
+.status-evaluated {
+    background-color: #4CAF50;
+}
+</style>
+@endpush
+
 @if(session('success'))
 <div class="server-alert-success">
     {{ session('success') }}
@@ -19,9 +42,9 @@
     <h1>Applications for Evaluation</h1>
     <div class="criterion-selector">
         <select id="status-filter" name="status">
-            <option value="pending evaluation" {{ request('status', 'pending evaluation') == 'pending evaluation' ? 'selected' : '' }}>Pending Evaluation</option>
+            <option value="all" {{ request('status', 'all') == 'all' ? 'selected' : '' }}>All Applications</option>
+            <option value="pending evaluation" {{ request('status') == 'pending evaluation' ? 'selected' : '' }}>Pending Evaluation</option>
             <option value="evaluated" {{ request('status') == 'evaluated' ? 'selected' : '' }}>Evaluated</option>
-            <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>All Applications</option>
         </select>
     </div>
 </div>
@@ -70,26 +93,5 @@
 
 @push('page-scripts')
 <script src="{{ asset('js/evaluation-scripts.js') }}"></script>
-<style>
-/* Simple status badge styling */
-.status-badge {
-    padding: 0.25em 0.6em;
-    border-radius: 1em;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: #fff;
-    text-transform: capitalize;
-}
-.status-pending-evaluation {
-    background-color: #FFC107; /* Amber */
-    color: #000;
-}
-.status-completed {
-    background-color: #4CAF50; /* Green */
-}
-.status-draft {
-    background-color: #607D8B; /* Blue Grey */
-}
-</style>
 @endpush
 
