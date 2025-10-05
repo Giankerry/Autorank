@@ -10,7 +10,7 @@ use InvalidArgumentException;
 class AHPService
 {
     // DBM-CHED (2022) KRA Category Point Caps
-    protected const KRA_CAPS = [
+    public const KRA_CAPS = [
         'kra1' => [ // Instruction
             'total' => 40, // Excludes teaching effectiveness (QCE)
             'sub_caps' => [

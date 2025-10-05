@@ -25,7 +25,7 @@ Profile | Autorank
 }
 
 #highest-attainable-rank h3 {
-    margin-bottom: 7px; 
+    margin-bottom: 7px;
 }
 
 .criterion-selector {
@@ -43,7 +43,7 @@ Profile | Autorank
   font-size: 16px;
   font-weight: 600;
   padding: 10px 40px 10px 20px;
-  
+
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -85,7 +85,7 @@ Profile | Autorank
                 @if($application)
                     <div id="highest-attainable-rank">
                         <h3>Attainable Rank Range</h3>
-                        <h5 id="rank-range-text">{{ $application->highest_attainable_rank ?? 'No evaluation data available yet.'}}</h5>
+                        <h5 style="color: #a6a8ad;" id="rank-range-text">{{ $application->highest_attainable_rank ?? 'No evaluation data available yet.'}}</h5>
                     </div>
                 @endif
                 <div class="basic-info-fields">
@@ -157,10 +157,14 @@ Profile | Autorank
 
                 @if ($isOwnProfile)
                 <div class="apply-for-reranking-container">
-                    <button id="start-evaluation-btn"
-                    data-check-url="{{ route('instructor.evaluation.check') }}">
-                        Start CCE Evaluation Process
-                    </button>
+                    @if ($hasSubmittedApplication)
+                        <p style="font-size: .9rem; color: #6B7280;">You have already submitted an application for the current evaluation cycle. You cannot submit another until the cycle ends.</p>
+                    @else
+                        <button id="start-evaluation-btn"
+                        data-check-url="{{ route('instructor.evaluation.check') }}">
+                            Start CCE Evaluation Process
+                        </button>
+                    @endif
                 </div>
                 @endif
             </div>
@@ -197,8 +201,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const primaryColorFromPHP = @json($primaryColor);
     const baseMonochromeColor = primaryColorFromPHP || '#262626';
     const fontFamily = "Rubik";
-    const noDataMessage = { text: 'No evaluation data available yet.', align: 'center', verticalAlign: 'middle', style: { color: isDarkMode ? '#A0AEC0' : '#6c757d', fontSize: '14px', fontFamily: fontFamily } };
-    
+    const noDataMessage = { text: 'No evaluation data available yet.', align: 'center', verticalAlign: 'middle', style: { color: '#6B7280', fontSize: '14px', fontFamily: fontFamily } };
+
     const initialChartData = @json($chartData ?? null);
     const hasInitialData = initialChartData !== null;
     let initialDonutSeries = [], initialBarSeries = [];
@@ -215,7 +219,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const donutColors = [ baseMonochromeColor, adjustColor(baseMonochromeColor, 20), adjustColor(baseMonochromeColor, 40), adjustColor(baseMonochromeColor, 60) ];
     const barColors = [baseMonochromeColor, '#E9ECEF'];
 
-    // --- Chart Rendering ---
     const donutEl = document.querySelector("#kraContributionChart");
     if (donutEl) {
         const donutOptions = {
@@ -224,20 +227,20 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: labels,
             colors: donutColors,
             noData: noDataMessage,
-            legend: { 
+            legend: {
                 position: 'bottom',
                 labels: {
                     colors: isDarkMode ? '#ffffff' : '#000000'
                 }
             },
-            title: { 
-                text: 'Score Contribution', 
+            title: {
+                text: 'Score Contribution',
                 align: 'center',
-                style: { 
-                    fontSize: '18px', 
+                style: {
+                    fontSize: '18px',
                     fontWeight: '600',
                     color: isDarkMode ? '#ffffff' : '#000000'
-                } 
+                }
             },
             plotOptions: {
                 pie: {
@@ -341,7 +344,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     return response.json();
                 })
                 .then(data => {
-                    // Update HTML content
                     const rankRangeContainer = document.getElementById('highest-attainable-rank');
                     if (data.status === 'evaluated') {
                         document.getElementById('rank-range-text').textContent = data.highestAttainableRank;
@@ -353,13 +355,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('evaluation-progress-bar').style.width = data.evaluationProgress + '%';
                     document.getElementById('evaluation-progress-text').textContent = data.evaluationProgress + '%';
 
-                    // Update the charts
                     const newChartData = data.chartData;
                     const hasNewData = newChartData !== null;
-                    const newCappedScores = hasNewData 
+                    const newCappedScores = hasNewData
                         ? [ newChartData.kra1_capped, newChartData.kra2_capped, newChartData.kra3_capped, newChartData.kra4_capped ].map(s => parseFloat(s) || 0)
                         : [];
-                    
+
                     if (donutChart) {
                         donutChart.updateOptions({ dataLabels: { enabled: hasNewData } });
                         donutChart.updateSeries(newCappedScores);
@@ -370,8 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         barChart.updateSeries(newBarSeries);
 
                     }
-                    
-                    // Update the browser URL
+
                     const currentUrl = new URL(window.location.href);
                     currentUrl.searchParams.set('application_id', selectedApplicationId);
                     history.pushState({}, '', currentUrl.toString());

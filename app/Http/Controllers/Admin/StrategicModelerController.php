@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Application;
+use App\Models\FacultyRank;
 use App\Services\AHPService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -53,11 +54,9 @@ class StrategicModelerController extends Controller
             $simulatedWeights = $ahpService->deriveWeightsFromComparisons($request->input('comparisons'));
             $targetRankCategory = $request->input('rank_category');
 
-            // --- CORRECTED LOGIC: Filter applications by the target rank category ---
             $applications = Application::where('status', 'evaluated')
                 ->with('user')
                 ->whereHas('user', function ($query) use ($targetRankCategory) {
-                    // This will find users where faculty_rank is 'Professor', 'Professor I', etc.
                     $query->where('faculty_rank', 'like', $targetRankCategory . '%');
                 })
                 ->get();
@@ -66,11 +65,14 @@ class StrategicModelerController extends Controller
                 return response()->json(['message' => 'No evaluated applications found for the selected rank category.'], 404);
             }
 
+            // Fetch all faculty ranks and create a lookup map for their levels.
+            $rankLevels = FacultyRank::all()->pluck('level', 'rank_name')->all();
+
             $totalDocumentPoints = 340;
             $simulationResults = [];
             $allScores = [];
             foreach ($applications as $application) {
-                // The conditional logic is no longer needed, as all users are in the target category.
+
                 $weightsToUse = $simulatedWeights;
 
                 $cappedScores = [
@@ -92,13 +94,14 @@ class StrategicModelerController extends Controller
                 $currentRank = $application->user->faculty_rank;
                 $simulatedRank = $ahpService->getRankFromScore($scaledSimulatedScore);
 
-                $currentThreshold = AHPService::RANK_THRESHOLDS[$currentRank] ?? 0;
-                $simulatedThreshold = AHPService::RANK_THRESHOLDS[$simulatedRank] ?? 0;
+                // Use the rank levels for accurate comparison.
+                $currentRankLevel = $rankLevels[$currentRank] ?? 0;
+                $simulatedRankLevel = $rankLevels[$simulatedRank] ?? 0;
 
                 $changeType = 'no_change';
-                if ($simulatedThreshold > $currentThreshold) {
+                if ($simulatedRankLevel > $currentRankLevel) {
                     $changeType = 'promoted';
-                } elseif ($simulatedThreshold < $currentThreshold) {
+                } elseif ($simulatedRankLevel < $currentRankLevel) {
                     $changeType = 'demoted';
                 }
 

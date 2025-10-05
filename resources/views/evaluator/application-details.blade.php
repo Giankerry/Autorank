@@ -59,8 +59,8 @@
                                 <button id="details-button" type="button">i</button>
                                 <div class="dropdown-content">
                                     <p>
-                                        This score (max 340 pts) is based on CCE documents only. 
-                                        It must be combined with instructors externally-calculated QCE score 
+                                        This score (max 340 pts) is based on CCE documents only.
+                                        It must be combined with instructors externally-calculated QCE score
                                         (max 60 pts) and other criteria to determine their final official rank.
                                     </p>
                                 </div>
@@ -69,14 +69,10 @@
                     @else
                         <span style="font-size: 1rem; font-weight: 400; color: #6c757d;">Not yet calculated</span>
                     @endif
-                </td>   
+                </td>
                 <td>KRA I: Instruction</td>
                 <td>
-                    @if($application->instructions_scored_count && $application->instructions_count)
-                        ( <strong class="submissions-total-count">{{ $application->instructions_count }}</strong> ) Submissions
-                    @else
                     ( <strong class="submissions-total-count" title="{{ $application->instructions_scored_count }}/{{ $application->instructions_count }}'s Submissions Scored">{{ $application->instructions_scored_count }} <span class="submissions-scored-count">/{{ $application->instructions_count }}</span></strong> ) Scored
-                    @endif
                 </td>
                 <td>
                     @if($application->instructions_count > 0)
@@ -96,16 +92,12 @@
             <tr>
                 <td>KRA II: Research</td>
                 <td>
-                    @if($application->researches_scored_count && $application->researches_count)
-                        ( <strong class="submissions-total-count">{{ $application->researches_count }}</strong> ) Submissions
-                    @else
-                    ( <strong class="submissions-total-count" title="{{ $application->researches_scored_count }}/{{ $application->researches_count }}'s Submissions Scored">{{ $application->researches_scored_count }} <span class="submissions-scored-count">/{{ $application->researches_count }}</span></strong> ) Scored
-                    @endif
+                   ( <strong class="submissions-total-count" title="{{ $application->researches_scored_count }}/{{ $application->researches_count }}'s Submissions Scored">{{ $application->researches_scored_count }} <span class="submissions-scored-count">/{{ $application->researches_count }}</span></strong> ) Scored
                 </td>
                 <td>
                     @if($application->researches_count > 0)
                         <a href="{{ route('evaluator.application.kra', ['application' => $application->id, 'kra_slug' => 'research']) }}" class="btn {{ $isResearchComplete ? 'btn-secondary' : 'btn-primary' }}">
-                             <button>{{ $isResearchComplete ? 'View Submissions' : 'Score Submissions' }}</button>
+                               <button>{{ $isResearchComplete ? 'View Submissions' : 'Score Submissions' }}</button>
                         </a>
                     @else
                         <button class="btn btn-secondary" disabled>No Submissions</button>
@@ -120,11 +112,7 @@
             <tr>
                 <td>KRA III: Extension</td>
                 <td>
-                    @if($application->extensions_scored_count && $application->extensions_count)
-                        ( <strong class="submissions-total-count">{{ $application->extensions_count }}</strong> ) Submissions
-                    @else
                     ( <strong class="submissions-total-count" title="{{ $application->extensions_scored_count }}/{{ $application->extensions_count }}'s Submissions Scored">{{ $application->extensions_scored_count }} <span class="submissions-scored-count">/{{ $application->extensions_count }}</span></strong> ) Scored
-                    @endif
                 </td>
                 <td>
                     @if($application->extensions_count > 0)
@@ -144,11 +132,7 @@
             <tr>
                 <td>KRA IV: Professional Development</td>
                 <td>
-                    @if($application->professional_developments_scored_count && $application->professional_developments_count)
-                        ( <strong class="submissions-total-count">{{ $application->professional_developments_count }}</strong> ) Submissions
-                    @else
                     ( <strong class="submissions-total-count" title="{{ $application->professional_developments_scored_count }}/{{ $application->professional_developments_count }}'s Submissions Scored">{{ $application->professional_developments_scored_count }} <span class="submissions-scored-count">/{{ $application->professional_developments_count }}</span></strong> ) Scored
-                    @endif
                 </td>
                 <td>
                     @if($application->professional_developments_count > 0)
@@ -167,7 +151,6 @@
 <div class="load-more-container">
     <a href="{{ route('evaluator.applications.dashboard') }}" class="btn btn-secondary"><button>Back</button></a>
 
-    {{-- Final Score Display & Calculation Button --}}
     <div class="final-score-container">
         @if($application->status == 'evaluated')
             <div class="score-display">
@@ -175,17 +158,78 @@
                 <p>This is the <i>lowest</i> to <i>highest</i> rank attainable.</p>
             </div>
         @else
-            <form method="POST" action="{{ route('evaluator.application.calculate-score', $application->id) }}" onsubmit="return confirm('Are you sure you want to finalize and calculate the score? This action cannot be undone.');">
+            <form id="calculate-score-form" method="POST" action="{{ route('evaluator.application.calculate-score', $application->id) }}">
                 @csrf
-                <button type="submit" class="upload-new-button">
-                    Calculate Final Score
-                </button>
             </form>
+            <button id="calculate-score-btn" type="button" class="upload-new-button"
+                    data-validate-url="{{ route('evaluator.application.validate-scores', $application->id) }}">
+                Calculate CCE Score
+            </button>   
         @endif
     </div>
 </div>
+
+@include('partials._action_modals')
+
 @endsection
 
 @push('page-scripts')
+<script src="{{ asset('js/modal-scripts.js') }}"></script>
 <script src="{{ asset('js/evaluation-scripts.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calculateScoreBtn = document.getElementById('calculate-score-btn');
+
+    if (calculateScoreBtn) {
+        calculateScoreBtn.addEventListener('click', async function() {
+            const validationUrl = this.dataset.validateUrl;
+            const originalButtonText = this.textContent;
+            
+            this.textContent = 'Loading...';
+            this.disabled = true;
+
+            try {
+                const response = await fetch(validationUrl, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                });
+
+                if (response.ok) {
+                    showConfirmationModal({
+                        title: 'Confirm Final Score Calculation',
+                        body: 'Are you sure you want to finalize and calculate the score? This action cannot be undone.',
+                        confirmText: 'Calculate Score',
+                        onConfirm: () => {
+                            document.getElementById('calculate-score-form').submit();
+                        }
+                    });
+                } else {
+                    const errorData = await response.json();
+                    showConfirmationModal({
+                        title: 'Incomplete Evaluation',
+                        body: `<p>${errorData.message}</p>`,
+                        confirmText: 'OK',
+                        onConfirm: () => {
+                            hideConfirmationModal();
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('An error occurred during validation:', error);
+                showConfirmationModal({
+                    title: 'Error',
+                    body: '<p>An unexpected error occurred while communicating with the server. Please try again.</p>',
+                    confirmText: 'OK',
+                    onConfirm: hideConfirmationModal
+                });
+            } finally {
+                this.textContent = originalButtonText;
+                this.disabled = false;
+            }
+        });
+    }
+});
+</script>
 @endpush

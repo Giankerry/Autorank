@@ -20,7 +20,6 @@ class DatabaseSeeder extends Seeder
             FacultyRankSeeder::class,
             SettingsTableSeeder::class,
             KraWeightsSeeder::class,
-            DemoDataSeeder::class,
         ]);
     }
 }

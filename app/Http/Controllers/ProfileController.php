@@ -26,6 +26,16 @@ class ProfileController extends Controller
             $evaluationStatus = 'No Application';
             $chartData = null;
 
+            // --- Determine the current evaluation cycle ---
+            $currentYear = now()->year;
+            $evaluationCycle = $currentYear . '-' . ($currentYear + 1);
+
+            // --- Check if the user has a submitted application for the current cycle ---
+            $hasSubmittedApplication = $user->applications()
+                ->where('evaluation_cycle', $evaluationCycle)
+                ->where('status', '!=', 'draft')
+                ->exists();
+
             // --- Fetch all applications for the dropdown selector ---
             $allApplications = $user->applications()
                 ->whereIn('status', ['pending evaluation', 'evaluated'])
@@ -36,7 +46,7 @@ class ProfileController extends Controller
             $application = null;
             if ($request->has('application_id')) {
                 // If an ID is in the URL, find that specific application.
-                // We use the collection to ensure the requested app belongs to the logged-in user.
+                // Use the collection to ensure the requested app belongs to the logged-in user.
                 $application = $allApplications->firstWhere('id', $request->input('application_id'));
             } elseif ($allApplications->isNotEmpty()) {
                 // Otherwise, if no ID is specified, default to the most recent application.
@@ -93,6 +103,7 @@ class ProfileController extends Controller
                 'chartData' => $chartData,
                 'primaryColor' => $primaryColor,
                 'theme' => $theme,
+                'hasSubmittedApplication' => $hasSubmittedApplication,
             ]);
         } else {
             return redirect()->route('signin-page')->with('error', 'You must be logged in to view your profile.');

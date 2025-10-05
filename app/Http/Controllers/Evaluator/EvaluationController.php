@@ -213,7 +213,7 @@ class EvaluationController extends Controller
         $filesData = [];
         if ($model->google_drive_file_id) {
             $filesData[] = [
-                'file_name' => $model->proof_filename ?? 'Download File',
+                'file_name' => $model->proof_filename ?? $model->filename ?? 'Download File',
                 'file_url'  => route('evaluator.submission.view-file', ['kra_slug' => $kra_slug, 'submission_id' => $submission_id]),
             ];
         }
@@ -381,8 +381,43 @@ class EvaluationController extends Controller
         return $data;
     }
 
+    /**
+     * AJAX endpoint to validate if all submissions for an application have been scored.
+     */
+    public function validateAllSubmissionsScored(Application $application)
+    {
+        $application->loadCount([
+            'instructions',
+            'researches',
+            'extensions',
+            'professionalDevelopments',
+            'instructions as instructions_scored_count' => fn($q) => $q->whereNotNull('score'),
+            'researches as researches_scored_count' => fn($q) => $q->whereNotNull('score'),
+            'extensions as extensions_scored_count' => fn($q) => $q->whereNotNull('score'),
+            'professionalDevelopments as professional_developments_scored_count' => fn($q) => $q->whereNotNull('score'),
+        ]);
+
+        $totalSubmissions = $application->instructions_count + $application->researches_count + $application->extensions_count + $application->professional_developments_count;
+        $scoredSubmissions = $application->instructions_scored_count + $application->researches_scored_count + $application->extensions_scored_count + $application->professional_developments_scored_count;
+
+        if ($totalSubmissions > $scoredSubmissions) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Not all submissions have been scored yet. Please score all submissions before calculating the final score.'
+            ], 422);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
     public function calculateFinalScore(Application $application, AHPService $ahpService)
     {
+        // Server-side validation to ensure all submissions are scored
+        $validationResponse = $this->validateAllSubmissionsScored($application);
+        if ($validationResponse->status() !== 200) {
+            return redirect()->back()->with('error', json_decode($validationResponse->getContent())->message);
+        }
+
         try {
             // Task 3.1: Aggregate scores for each KRA
             $application->kra1_score = $application->instructions()->sum('score');

@@ -118,8 +118,8 @@
     .kpi-card-icon {
         padding: 0.75rem;
         border-radius: 50%;
-        width: 50px;
-        height: 50px;
+        min-width: 50px;
+        min-height: 50px;
         display: flex;
         justify-content: center;
         align-items: center;

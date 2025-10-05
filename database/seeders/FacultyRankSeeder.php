@@ -4,51 +4,34 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\FacultyRank;
-use App\Models\FacultyRankKraWeight;
 
 class FacultyRankSeeder extends Seeder
 {
     public function run(): void
     {
         $ranks = [
-            'Instructor I' => [60, 10, 20, 10],
-            'Instructor II' => [60, 10, 20, 10],
-            'Instructor III' => [60, 10, 20, 10],
-            'Assistant Professor I' => [50, 20, 20, 10],
-            'Assistant Professor II' => [50, 20, 20, 10],
-            'Assistant Professor III' => [50, 20, 20, 10],
-            'Assistant Professor IV' => [50, 20, 20, 10],
-            'Associate Professor I' => [40, 30, 20, 10],
-            'Associate Professor II' => [40, 30, 20, 10],
-            'Associate Professor III' => [40, 30, 20, 10],
-            'Associate Professor IV' => [40, 30, 20, 10],
-            'Associate Professor V' => [40, 30, 20, 10],
-            'Professor I' => [30, 40, 20, 10],
-            'Professor II' => [30, 40, 20, 10],
-            'Professor III' => [30, 40, 20, 10],
-            'Professor IV' => [30, 40, 20, 10],
-            'Professor V' => [30, 40, 20, 10],
-            'Professor VI' => [30, 40, 20, 10],
-            'College / University Professor' => [20, 50, 20, 10],
+            ['rank_name' => 'Instructor I', 'level' => 1],
+            ['rank_name' => 'Instructor II', 'level' => 2],
+            ['rank_name' => 'Instructor III', 'level' => 3],
+            ['rank_name' => 'Assistant Professor I', 'level' => 4],
+            ['rank_name' => 'Assistant Professor II', 'level' => 5],
+            ['rank_name' => 'Assistant Professor III', 'level' => 6],
+            ['rank_name' => 'Assistant Professor IV', 'level' => 7],
+            ['rank_name' => 'Associate Professor I', 'level' => 8],
+            ['rank_name' => 'Associate Professor II', 'level' => 9],
+            ['rank_name' => 'Associate Professor III', 'level' => 10],
+            ['rank_name' => 'Associate Professor IV', 'level' => 11],
+            ['rank_name' => 'Associate Professor V', 'level' => 12],
+            ['rank_name' => 'Professor I', 'level' => 13],
+            ['rank_name' => 'Professor II', 'level' => 14],
+            ['rank_name' => 'Professor III', 'level' => 15],
+            ['rank_name' => 'Professor IV', 'level' => 16],
+            ['rank_name' => 'Professor V', 'level' => 17],
+            ['rank_name' => 'Professor VI', 'level' => 18],
         ];
 
-        $kraNames = [
-            'KRA 1 Instruction',
-            'KRA 2 Research',
-            'KRA 3 Extension',
-            'KRA 4 Professional Development',
-        ];
-
-        foreach ($ranks as $rankName => $weights) {
-            $rank = FacultyRank::create(['rank_name' => $rankName]);
-
-            foreach ($weights as $index => $weight) {
-                FacultyRankKraWeight::create([
-                    'faculty_rank_id' => $rank->id,
-                    'kra_name' => $kraNames[$index],
-                    'weight' => $weight,
-                ]);
-            }
+        foreach ($ranks as $rank) {
+            FacultyRank::create($rank);
         }
     }
 }

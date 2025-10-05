@@ -75,9 +75,13 @@ class ApplyController extends Controller
             return redirect()->route('profile-page')->with('error', 'Submission Denied: You do not have a faculty rank assigned. Please contact the system administrator to have your rank validated and set before submitting your CCE documents.');
         }
 
-        // Check for an existing application that is already pending evaluation to prevent duplicates
-        if ($user->applications()->where('status', 'pending evaluation')->exists()) {
-            return redirect()->route('profile-page')->with('error', 'You already have an application pending evaluation.');
+        // Determine the current evaluation cycle (e.g., "2025-2026")
+        $currentYear = now()->year;
+        $evaluationCycle = $currentYear . '-' . ($currentYear + 1);
+
+        // Check for an existing application in the current cycle that is not a draft
+        if ($user->applications()->where('evaluation_cycle', $evaluationCycle)->where('status', '!=', 'draft')->exists()) {
+            return redirect()->route('profile-page')->with('error', 'You have already submitted an application for the ' . $evaluationCycle . ' evaluation cycle.');
         }
 
         // Find the user's draft application
@@ -86,10 +90,6 @@ class ApplyController extends Controller
         if (!$draftApplication) {
             return redirect()->route('profile-page')->with('error', 'No draft application found to submit.');
         }
-
-        // Determine the current evaluation cycle (e.g., "2025-2026")
-        $currentYear = now()->year;
-        $evaluationCycle = $currentYear . '-' . ($currentYear + 1);
 
         // Update the status and stamp the application with the current cycle
         $draftApplication->status = 'pending evaluation';
