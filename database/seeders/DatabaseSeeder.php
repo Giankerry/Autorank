@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
             RolesTableSeeder::class,
             FacultyRankSeeder::class,
             SettingsTableSeeder::class,
+            KraWeightsSeeder::class,
+            DemoDataSeeder::class,
         ]);
     }
 }

@@ -13,11 +13,6 @@ class PageController extends Controller
         return view('auth.signin-page');
     }
 
-    public function showDashboard()
-    {
-        return view('dashboard');
-    }
-
     public function showAllUsersPage()
     {
         $users = User::with('roles.permissions')->get();

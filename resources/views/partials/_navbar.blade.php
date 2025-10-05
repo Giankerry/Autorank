@@ -34,30 +34,27 @@
         </div>
     </div>
     <div id="hidden-menu">
-        {{-- Always show Dashboard, Settings, and Logout for any authenticated user --}}
-        <a href="{{ route('dashboard') }}">
+        {{-- ADMIN Routes --}}
+        @auth
+        @can('manage users')
+        <a href="{{ route('admin.dashboard') }}">
             <div class="hidden-menu-icon">
                 <i class="fa-solid fa-check-to-slot" style="color: #ffffff;"></i>
             </div>
             <div class="hidden-menu-title">
-                <p>Dashboard</p>
+                <p>Admin Dashboard</p>
             </div>
         </a>
 
-        @unlessrole('evaluator')
-        <a href="{{ route('profile-page') }}">
+        <a href="{{ route('admin.modeler') }}">
             <div class="hidden-menu-icon">
-                <i class="fa-solid fa-address-book"></i>
+                <i class="fa-solid fa-hexagon-nodes" style="color: #ffffff;"></i>
             </div>
             <div class="hidden-menu-title">
-                <p>Profile</p>
+                <p>Strategic Modeler</p>
             </div>
         </a>
-        @endunlessrole
 
-        {{-- ADMIN Routes --}}
-        @auth
-        @can('manage users')
         <a href="{{ route('manage-users') }}">
             <div class="hidden-menu-icon">
                 <i class="fa-solid fa-users"></i>
@@ -85,6 +82,15 @@
 
         {{-- INSTRUCTOR Routes --}}
         @unlessrole('admin|evaluator')
+        <a href="{{ route('profile-page') }}">
+            <div class="hidden-menu-icon">
+                <i class="fa-solid fa-address-book"></i>
+            </div>
+            <div class="hidden-menu-title">
+                <p>Profile</p>
+            </div>
+        </a>
+
         <a href="{{ route('instructor.instructional-page') }}">
             <div class="hidden-menu-icon">
                 <i class="fa-solid fa-clipboard-check"></i>

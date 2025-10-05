@@ -76,12 +76,26 @@ class SocialiteLoginController extends Controller
 
         Auth::login($user, true);
 
-        // Check for the session flag and redirect to settings if present.
+        // Check for the session flag and redirect to settings if present. This takes priority.
         if ($request->session()->pull('redirect_to_settings')) {
             return redirect()->route('system-settings')->with('success', 'Google Drive has been reconnected successfully!');
         }
 
-        return redirect()->route('dashboard');
+        /** @var \App\Models\User $loggedInUser */
+        $loggedInUser = Auth::user();
+
+        // Redirect Admins to the Admin Dashboard.
+        if ($loggedInUser->hasRole('admin')) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        // Redirect Evaluators to their applications queue.
+        if ($loggedInUser->hasRole('evaluator')) {
+            return redirect()->route('evaluator.applications.dashboard');
+        }
+
+        // Default redirect for regular users (instructors).
+        return redirect()->route('profile-page');
     }
 
     /**

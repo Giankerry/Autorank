@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 // Controller Imports
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\StrategicModelerController;
 use App\Http\Controllers\Admin\SystemSettingsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\SocialiteLoginController;
@@ -49,7 +51,6 @@ Route::get('/css/dynamic-styles.css', [SystemSettingsController::class, 'generat
 */
 Route::middleware(['auth'])->group(function () {
     // General Authenticated Routes
-    Route::get('/dashboard', [PageController::class, 'showDashboard'])->name('dashboard');
     Route::get('/profile', [ProfileController::class, 'showProfilePage'])->name('profile-page');
     Route::get('/settings', [SystemSettingsController::class, 'showSystemSettings'])->name('system-settings');
     Route::post('/user/preference/theme', [UserPreferenceController::class, 'updateTheme'])->name('user.preference.theme.update');
@@ -75,12 +76,18 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::middleware(['role_or_permission:admin|access applications page'])->group(function () {
+        // Admin Dashboard & Strategic Modeler
+        Route::prefix('admin')->name('admin.')->group(function () {
+            Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/modeler', [StrategicModelerController::class, 'index'])->name('modeler');
+            Route::post('/modeler/run-simulation', [StrategicModelerController::class, 'runSimulation'])->name('modeler.run');
+        });
+
         // User & Rank Management
         Route::get('/manage-users', [UserController::class, 'index'])->name('manage-users');
         Route::put('/manage-users/{user}/update-roles', [UserController::class, 'updateRoles'])->name('manage-users.updateRoles');
         Route::get('/manage-faculty-ranks', [UserController::class, 'manageFacultyRanks'])->name('manage-faculty-ranks');
         Route::put('/users/{user}/update-faculty-rank', [UserController::class, 'updateFacultyRank'])->name('users.update-faculty-rank');
-        Route::get('/users/{user}', [UserController::class, 'show'])->name('user.profile');
 
         // System Settings & Theme Management
         Route::post('/settings/logo', [SystemSettingsController::class, 'updateLogo'])->middleware('can:manage users')->name('settings.logo.update');

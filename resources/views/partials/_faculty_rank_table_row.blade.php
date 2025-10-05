@@ -20,9 +20,6 @@
                 data-current-rank="{{ $user->faculty_rank ?? '' }}">
                 Update Rank
             </button>
-            <a href="{{ route('user.profile', $user->id) }}">
-                <button>View Profile</button>
-            </a>
         </div>
     </td>
 </tr>

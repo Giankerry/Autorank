@@ -71,7 +71,6 @@ class ApplyController extends Controller
         $user = Auth::user();
 
         // Server-Side Gate: Final validation to ensure user has a rank.
-        // This acts as a safeguard in case the frontend check is bypassed.
         if (is_null($user->faculty_rank) || trim($user->faculty_rank) === '' || trim($user->faculty_rank) === 'Unset') {
             return redirect()->route('profile-page')->with('error', 'Submission Denied: You do not have a faculty rank assigned. Please contact the system administrator to have your rank validated and set before submitting your CCE documents.');
         }
@@ -88,10 +87,15 @@ class ApplyController extends Controller
             return redirect()->route('profile-page')->with('error', 'No draft application found to submit.');
         }
 
-        // Update the status of the draft application to 'pending evaluation'
+        // Determine the current evaluation cycle (e.g., "2025-2026")
+        $currentYear = now()->year;
+        $evaluationCycle = $currentYear . '-' . ($currentYear + 1);
+
+        // Update the status and stamp the application with the current cycle
         $draftApplication->status = 'pending evaluation';
+        $draftApplication->evaluation_cycle = $evaluationCycle;
         $draftApplication->save();
 
-        return redirect()->route('profile-page')->with('success', 'Your CCE documents have been successfully submitted for evaluation!');
+        return redirect()->route('profile-page')->with('success', 'Your CCE documents have been successfully submitted for the ' . $evaluationCycle . ' evaluation cycle!');
     }
 }

@@ -16,14 +16,6 @@
                 <ul>
                     <li>Google Drive Access</li>
                 </ul>
-                @auth
-                @can('manage users')
-                <a href="#functionality-section-bookmark">Functionality</a>
-                <ul>
-                    <li>Rank Weights</li>
-                </ul>
-                @endcan
-                @endauth
                 <a href="#display-settings-section-bookmark">Display</a>
                 <ul>
                     @auth
@@ -74,21 +66,6 @@
                     </div>
                     <hr>
                 </div>
-            </section>
-
-            <section>
-                @auth
-                @can('manage users')
-                <div class="settings-section-child">
-                    <h1>Set Faculty Rank Weights</h1>
-                    <hr>
-                    <p class="settings-section-description">Adjust or reset evaluation weights for each faculty rank to maintain consistency with institutional standards.</p>
-                    <div class="settings-section-child-div">
-                    </div>
-                    <hr>
-                </div>
-                @endcan
-                @endauth
             </section>
 
             <section id="display-settings-section-bookmark">

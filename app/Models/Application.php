@@ -26,6 +26,7 @@ class Application extends Model
     protected $fillable = [
         'user_id',
         'status',
+        'evaluation_cycle',
         'kra1_score',
         'kra2_score',
         'kra3_score',

@@ -24,9 +24,6 @@
                 data-current-role-name="{{ Str::title(str_replace('_', ' ', $user->roles->first()->name ?? 'N/A')) }}">
                 Update Role
             </button>
-            <a href="{{ route('user.profile', $user->id) }}">
-                <button>View Profile</button>
-            </a>
         </div>
     </td>
 </tr>

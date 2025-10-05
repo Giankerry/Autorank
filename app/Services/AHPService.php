@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\Application;
+use App\Models\KraWeight;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 
 class AHPService
 {
@@ -50,7 +52,7 @@ class AHPService
         ],
     ];
 
-    protected const RANK_THRESHOLDS = [
+    public const RANK_THRESHOLDS = [
         'Professor V' => 595,
         'Professor IV' => 562,
         'Professor III' => 529,
@@ -71,35 +73,85 @@ class AHPService
     ];
 
     /**
-     * For the Strategic Modeler feature,
-     * which will allow administrators to run "what-if" scenarios with different institutional priorities.
+     * Retrieves the official, active KRA weights for a given rank category from the database.
+     *
+     * @param string $rankCategory The rank category to fetch weights for (e.g., 'Instructor').
+     * @return array|null An associative array of the weights or null if not found.
      */
-    protected const RANK_KRA_WEIGHTS = [
-        'Instructor' => [
-            'kra1' => 0.80,
-            'kra2' => 0.10,
-            'kra3' => 0.05,
-            'kra4' => 0.05,
-        ],
-        'Assistant Professor' => [
-            'kra1' => 0.60,
-            'kra2' => 0.20,
-            'kra3' => 0.10,
-            'kra4' => 0.10,
-        ],
-        'Associate Professor' => [
-            'kra1' => 0.40,
-            'kra2' => 0.30,
-            'kra3' => 0.15,
-            'kra4' => 0.15,
-        ],
-        'Professor' => [
-            'kra1' => 0.30,
-            'kra2' => 0.40,
-            'kra3' => 0.15,
-            'kra4' => 0.15,
-        ],
-    ];
+    public function getOfficialWeights(string $rankCategory): ?array
+    {
+        $weights = KraWeight::where('rank_category', $rankCategory)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$weights) {
+            Log::warning("No active KRA weights found in the database for rank category: {$rankCategory}");
+            return null;
+        }
+
+        return [
+            'kra1' => $weights->kra1_weight,
+            'kra2' => $weights->kra2_weight,
+            'kra3' => $weights->kra3_weight,
+            'kra4' => $weights->kra4_weight,
+        ];
+    }
+
+    /**
+     * Derives the final KRA percentage weights from pairwise comparison values using the Analytic Hierarchy Process (AHP).
+     *
+     * @param array $comparisons An associative array of the 6 pairwise comparison values from the frontend.
+     * @return array The final derived weights for each KRA (e.g., ['kra1' => 0.43, ...]).
+     * @throws InvalidArgumentException
+     */
+    public function deriveWeightsFromComparisons(array $comparisons): array
+    {
+        // Step 1: Construct the 4x4 pairwise comparison matrix.
+        // The matrix represents the relative importance of each KRA against every other KRA.
+        $matrix = [
+            [1, $comparisons['kra_1_vs_2'], $comparisons['kra_1_vs_3'], $comparisons['kra_1_vs_4']],
+            [1 / $comparisons['kra_1_vs_2'], 1, $comparisons['kra_2_vs_3'], $comparisons['kra_2_vs_4']],
+            [1 / $comparisons['kra_1_vs_3'], 1 / $comparisons['kra_2_vs_3'], 1, $comparisons['kra_3_vs_4']],
+            [1 / $comparisons['kra_1_vs_4'], 1 / $comparisons['kra_2_vs_4'], 1 / $comparisons['kra_3_vs_4'], 1],
+        ];
+
+        // Step 2: Calculate the sum of each column in the matrix.
+        $columnSums = [0, 0, 0, 0];
+        for ($i = 0; $i < 4; $i++) {
+            for ($j = 0; $j < 4; $j++) {
+                $columnSums[$j] += $matrix[$i][$j];
+            }
+        }
+
+        // Basic validation to prevent division by zero.
+        foreach ($columnSums as $sum) {
+            if ($sum == 0) {
+                throw new InvalidArgumentException("AHP matrix column sum is zero, cannot normalize.");
+            }
+        }
+
+        // Step 3: Normalize the matrix by dividing each element by its column sum.
+        $normalizedMatrix = [];
+        for ($i = 0; $i < 4; $i++) {
+            for ($j = 0; $j < 4; $j++) {
+                $normalizedMatrix[$i][$j] = $matrix[$i][$j] / $columnSums[$j];
+            }
+        }
+
+        // Step 4: Calculate the final weights by averaging the values in each row of the normalized matrix.
+        $weights = [];
+        for ($i = 0; $i < 4; $i++) {
+            $weights[$i] = array_sum($normalizedMatrix[$i]) / 4;
+        }
+
+        // Return the weights in a clearly labeled associative array.
+        return [
+            'kra1' => $weights[0],
+            'kra2' => $weights[1],
+            'kra3' => $weights[2],
+            'kra4' => $weights[3],
+        ];
+    }
 
     /**
      * Calculates the final CCE Document Score for an application.
