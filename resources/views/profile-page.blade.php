@@ -287,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
             chart: { type: 'bar', height: 350, fontFamily: fontFamily, toolbar: { show: false } },
             noData: noDataMessage,
             plotOptions: { bar: { horizontal: false, borderRadius: 4, dataLabels: { position: 'top' } } },
-            dataLabels: { enabled: hasInitialData, offsetX: 25, style: { fontSize: '12px', colors: [textColor] }, formatter: (val) => val.toFixed(2) }, // Enabled only if data exists
+            dataLabels: { enabled: hasInitialData, offsetX: 25, style: { fontSize: '12px', colors: [textColor] }, formatter: (val) => val.toFixed(2) },
             stroke: { show: false },
             xaxis: { categories: labels, title: { text: 'Points', style: { color: textColor, fontWeight: 550, } }, labels: { style: { colors: textColor } } },
             yaxis: { labels: { style: { colors: textColor } } },

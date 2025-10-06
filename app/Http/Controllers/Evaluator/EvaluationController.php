@@ -412,32 +412,24 @@ class EvaluationController extends Controller
 
     public function calculateFinalScore(Application $application, AHPService $ahpService)
     {
-        // Server-side validation to ensure all submissions are scored
         $validationResponse = $this->validateAllSubmissionsScored($application);
         if ($validationResponse->status() !== 200) {
             return redirect()->back()->with('error', json_decode($validationResponse->getContent())->message);
         }
 
         try {
-            // Task 3.1: Aggregate scores for each KRA
             $application->kra1_score = $application->instructions()->sum('score');
             $application->kra2_score = $application->researches()->sum('score');
             $application->kra3_score = $application->extensions()->sum('score');
             $application->kra4_score = $application->professionalDevelopments()->sum('score');
 
-            // Task 3.2: Calculate the final CCE Document Score using the AHPService.
             $finalScore = $ahpService->calculateCceDocumentScore($application);
 
-
-            // Task 3.3: Determine the rank range.
-            // Get the minimum rank based on the current score.
             $minRank = $ahpService->getRankFromScore($finalScore);
 
-            // Calculate a hypothetical score to determine the maximum possible rank.
-            $scoreForMaxRank = $finalScore + 200;
+            $scoreForMaxRank = $finalScore + 260;
             $maxRank = $ahpService->getRankFromScore($scoreForMaxRank);
 
-            // Create the range string. If min and max ranks are the same, just show one.
             $rankRange = ($minRank === $maxRank) ? $minRank : "{$minRank} - {$maxRank}";
 
             $application->final_score = $finalScore;
@@ -446,7 +438,6 @@ class EvaluationController extends Controller
 
             $application->save();
 
-            // Update the success message to reflect the change.
             $successMessage = sprintf(
                 "Evaluation complete! Final CCE Document Score: %.2f. Attainable Rank Range (based on CCE documents): %s.",
                 $finalScore,

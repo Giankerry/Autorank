@@ -13,6 +13,7 @@
     --pageBackgroundColor: #ffffff;
     --pageTextColor: #000000;
     --pageTextColorOnBlack: #ffffff;
+    --pageTextColorSmoke: rgb(185, 185, 185);
     --systemRed: hsl(0, 100%, 41%);
     --systemRedHover: hsl(0, 100%, 45%);
     --systemGreen: hsl(112, 100%, 35%);

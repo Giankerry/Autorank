@@ -53,28 +53,43 @@ class StrategicModelerController extends Controller
         try {
             $simulatedWeights = $ahpService->deriveWeightsFromComparisons($request->input('comparisons'));
             $targetRankCategory = $request->input('rank_category');
+            $totalDocumentPoints = 340;
 
-            $applications = Application::where('status', 'evaluated')
-                ->with('user')
-                ->whereHas('user', function ($query) use ($targetRankCategory) {
-                    $query->where('faculty_rank', 'like', $targetRankCategory . '%');
-                })
-                ->get();
+            $defaultWeights = [
+                'kra1' => 0.25,
+                'kra2' => 0.25,
+                'kra3' => 0.25,
+                'kra4' => 0.25,
+            ];
 
-            if ($applications->isEmpty()) {
-                return response()->json(['message' => 'No evaluated applications found for the selected rank category.'], 404);
+            $allApplications = Application::where('status', 'evaluated')->with('user')->get();
+
+            if ($allApplications->isEmpty()) {
+                return response()->json(['message' => 'No evaluated applications found in the system to run a simulation.'], 404);
             }
 
-            // Fetch all faculty ranks and create a lookup map for their levels.
+            $allApplications->each(function ($application) use ($defaultWeights, $totalDocumentPoints) {
+                $cappedScores = [
+                    'kra1' => min($application->kra1_score ?? 0, 40),
+                    'kra2' => min($application->kra2_score ?? 0, 100),
+                    'kra3' => min($application->kra3_score ?? 0, 100),
+                    'kra4' => min($application->kra4_score ?? 0, 100),
+                ];
+                $baselineScore =
+                    ($cappedScores['kra1'] * $defaultWeights['kra1']) +
+                    ($cappedScores['kra2'] * $defaultWeights['kra2']) +
+                    ($cappedScores['kra3'] * $defaultWeights['kra3']) +
+                    ($cappedScores['kra4'] * $defaultWeights['kra4']);
+
+                $application->baseline_score = $baselineScore * ($totalDocumentPoints / 100);
+            });
+
             $rankLevels = FacultyRank::all()->pluck('level', 'rank_name')->all();
 
-            $totalDocumentPoints = 340;
             $simulationResults = [];
-            $allScores = [];
-            foreach ($applications as $application) {
+            $allSimulatedScores = [];
 
-                $weightsToUse = $simulatedWeights;
-
+            foreach ($allApplications as $application) {
                 $cappedScores = [
                     'kra1' => min($application->kra1_score ?? 0, 40),
                     'kra2' => min($application->kra2_score ?? 0, 100),
@@ -83,18 +98,17 @@ class StrategicModelerController extends Controller
                 ];
 
                 $simulatedScore =
-                    ($cappedScores['kra1'] * $weightsToUse['kra1']) +
-                    ($cappedScores['kra2'] * $weightsToUse['kra2']) +
-                    ($cappedScores['kra3'] * $weightsToUse['kra3']) +
-                    ($cappedScores['kra4'] * $weightsToUse['kra4']);
+                    ($cappedScores['kra1'] * $simulatedWeights['kra1']) +
+                    ($cappedScores['kra2'] * $simulatedWeights['kra2']) +
+                    ($cappedScores['kra3'] * $simulatedWeights['kra3']) +
+                    ($cappedScores['kra4'] * $simulatedWeights['kra4']);
 
                 $scaledSimulatedScore = $simulatedScore * ($totalDocumentPoints / 100);
-                $allScores[] = $scaledSimulatedScore;
+                $allSimulatedScores[] = $scaledSimulatedScore;
 
-                $currentRank = $application->user->faculty_rank;
+                $currentRank = $ahpService->getRankFromScore($application->baseline_score);
                 $simulatedRank = $ahpService->getRankFromScore($scaledSimulatedScore);
 
-                // Use the rank levels for accurate comparison.
                 $currentRankLevel = $rankLevels[$currentRank] ?? 0;
                 $simulatedRankLevel = $rankLevels[$simulatedRank] ?? 0;
 
@@ -107,27 +121,38 @@ class StrategicModelerController extends Controller
 
                 $simulationResults[] = [
                     'name' => $application->user->name,
+                    'baseline_score' => $application->baseline_score,
+                    'simulated_score' => $scaledSimulatedScore,
                     'current_rank' => $currentRank,
                     'simulated_rank' => $simulatedRank,
-                    'score_change' => $scaledSimulatedScore - $application->final_score,
+                    'score_change' => $scaledSimulatedScore - $application->baseline_score,
                     'change_type' => $changeType,
                 ];
             }
 
-            $response = $this->compileFrontendResponse($simulationResults, $allScores);
+            $response = $this->compileFrontendResponse($simulationResults, $allSimulatedScores);
+
+            $response['table_data'] = collect($response['table_data'])->filter(function ($row) use ($targetRankCategory) {
+                return $this->getRankCategory($row['current_rank']) === $targetRankCategory;
+            })->values()->all();
+
+            if (empty($response['table_data'])) {
+                return response()->json(['message' => 'No faculty found in the selected rank category to display in the table.'], 404);
+            }
 
             return response()->json($response);
         } catch (InvalidArgumentException $e) {
             Log::error('AHP Calculation Error: ' . $e->getMessage());
             return response()->json(['message' => 'A critical error occurred during calculation. Please check the inputs.'], 400);
         } catch (\Exception $e) {
-            Log::error('Simulation Error: ' . $e->getMessage());
+            Log::error('Simulation Error: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json(['message' => 'An unexpected server error occurred.'], 500);
         }
     }
 
     /**
      * Compiles the simulation data into the format expected by the frontend.
+     * The chart data is now always global, showing all ranks.
      *
      * @param array $results
      * @param array $allScores
@@ -144,9 +169,10 @@ class StrategicModelerController extends Controller
             'highest_impact_faculty' => $highestImpact['name'] ?? 'N/A',
         ];
 
-        $rankCategories = array_keys(AHPService::RANK_THRESHOLDS);
-        $currentDist = array_fill_keys($rankCategories, 0);
-        $simulatedDist = array_fill_keys($rankCategories, 0);
+        $chartCategories = FacultyRank::orderBy('level')->pluck('rank_name')->all();
+
+        $currentDist = array_fill_keys($chartCategories, 0);
+        $simulatedDist = array_fill_keys($chartCategories, 0);
 
         foreach ($results as $result) {
             if (isset($currentDist[$result['current_rank']])) {
@@ -158,7 +184,7 @@ class StrategicModelerController extends Controller
         }
 
         $chartData = [
-            'categories' => $rankCategories,
+            'categories' => $chartCategories,
             'current' => array_values($currentDist),
             'simulated' => array_values($simulatedDist),
         ];
@@ -173,6 +199,9 @@ class StrategicModelerController extends Controller
 
             return [
                 'name' => $result['name'],
+                'baseline_score' => number_format($result['baseline_score'], 2),
+                'simulated_score' => number_format($result['simulated_score'], 2),
+                'score_change' => number_format($result['score_change'], 2),
                 'current_rank' => $result['current_rank'],
                 'simulated_rank' => $result['simulated_rank'],
                 'change_type' => $result['change_type'],
@@ -201,7 +230,6 @@ class StrategicModelerController extends Controller
         if (Str::startsWith($rank, 'Assistant Professor')) return 'Assistant Professor';
         if (Str::startsWith($rank, 'Instructor')) return 'Instructor';
 
-        // Default fallback
         return 'Instructor';
     }
 }
