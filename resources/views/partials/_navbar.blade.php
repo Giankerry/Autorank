@@ -137,7 +137,7 @@
             </div>
         </a>
 
-        <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+        <a href="#" id="logout-button">
             <div class="hidden-menu-icon">
                 <i class="fa-solid fa-key"></i>
             </div>

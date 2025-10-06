@@ -213,6 +213,23 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmationModal.addEventListener('click', (e) => { if (e.target === confirmationModal) hideConfirmationModal(); });
         }
 
+        // --- Logout Confirmation ---
+        const logoutButton = document.getElementById('logout-button');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                showConfirmationModal({
+                    title: 'Confirm Logout',
+                    body: 'Are you sure you want to log out of your account?',
+                    confirmText: 'Logout',
+                    onConfirm: () => new Promise(resolve => {
+                        document.getElementById('logout-form').submit();
+                        resolve();
+                    })
+                });
+            });
+        }
+
         // --- Delegated Click Listeners ---
         document.body.addEventListener('click', (event) => {
             const viewButton = event.target.closest('.view-file-btn');
