@@ -174,7 +174,6 @@
 @endsection
 
 @push('page-scripts')
-<script src="{{ asset('js/modal-scripts.js') }}"></script>
 <script src="{{ asset('js/evaluation-scripts.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {

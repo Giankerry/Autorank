@@ -244,7 +244,6 @@
 @endsection
 
 @push('page-scripts')
-<script src="{{ asset('js/modal-scripts.js') }}"></script>
 <script>
     window.instructionalMaterialOptions = {!! $imTypesJson !!};
     window.mentorshipRoleOptions = {!! $msRolesJson !!};
