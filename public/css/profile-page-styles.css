@@ -334,3 +334,60 @@
 .missing-kra-list li a:hover {
     text-decoration: underline;
 }
+
+/* DASHBOARD STYLING -- -- -- */
+#highest-attainable-rank {
+    background-color: hsl(var(--base-hue-primary), var(--base-saturation-primary), calc(var(--base-lightness-primary) + 15%));
+    border-radius: 5px;
+    width: 100%;
+    height: auto;
+    font-size: .9rem;
+    font-family: var(--mainFont);
+    font-weight: 500;
+    padding: 10px;
+    color: white;
+}
+
+#highest-attainable-rank h3 {
+    margin-bottom: 7px;
+}
+
+.criterion-selector {
+  position: relative;
+  display: inline-block;
+}
+
+.criterion-selector select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  background-color: hsl(var(--base-hue-primary), var(--base-saturation-primary), calc(var(--base-lightness-primary) + 15%));;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 10px 40px 10px 20px;
+
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align-last: center;
+}
+
+.criterion-selector::after {
+  content: "▼";
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #fff;
+  pointer-events: none;
+}
+
+.stats-container {
+    width: 100%;
+    height: auto;
+    display: flex;
+    gap: 20px;
+}
