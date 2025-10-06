@@ -44,6 +44,7 @@ class ResearchController extends Controller
         return [
             // Options for Research Outputs
             'ro_categories' => [
+                'Thesis / Dissertation',
                 'Journal Article',
                 'Book / Monograph',
                 'Book Chapter',
