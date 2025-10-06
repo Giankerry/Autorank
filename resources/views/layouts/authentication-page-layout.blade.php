@@ -18,7 +18,12 @@
     <link rel="stylesheet" href="{{ asset('css/system-settings-styles.css') }}">
     <link rel="stylesheet" href="{{ asset('css/authentication-page-styles.css') }}">
     <link rel="stylesheet" href="{{ asset('css/responsive-styles.css') }}">
-    <link rel="stylesheet" href="{{ route('dynamic.css') }}">
+    @php
+        $primaryColorSetting = \App\Models\Setting::where('key', 'primary_color')->first();
+        $cssVersion = $primaryColorSetting ? $primaryColorSetting->updated_at->timestamp : now()->timestamp;
+    @endphp
+
+    <link rel="stylesheet" href="{{ route('dynamic.css') }}?v={{ $cssVersion }}">
 
     <!-- Fontawesome CDN -->
     <script src="https://kit.fontawesome.com/5ba477d22e.js" crossorigin="anonymous"></script>

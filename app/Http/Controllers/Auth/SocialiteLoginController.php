@@ -70,9 +70,9 @@ class SocialiteLoginController extends Controller
                 'google_refresh_token' => $googleUser->refreshToken,
                 'password' => bcrypt(Str::random(40)),
             ]);
-            // Assign the default role since this is a new user.
-            $user->assignDefaultRoleByEmail();
         }
+
+        $user->assignDefaultRoleByEmail();
 
         Auth::login($user, true);
 
