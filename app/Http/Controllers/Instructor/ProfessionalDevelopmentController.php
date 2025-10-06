@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Instructor;
 
+use App\Exceptions\GoogleAccountDisconnectedException;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\ManagesGoogleDrive;
 use App\Models\Application;
@@ -158,8 +159,10 @@ class ProfessionalDevelopmentController extends Controller
             return response()->json(['success' => true, 'message' => 'Successfully uploaded!'], 201);
         } catch (ValidationException $e) {
             return response()->json(['message' => 'The given data was invalid.', 'errors' => $e->errors()], 422);
+        } catch (GoogleAccountDisconnectedException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
         } catch (\Exception $e) {
-            Log::error('Professional Development Upload Failed: ' . $e->getMessage() . ' on line ' . $e->getLine() . ' in ' . $e->getFile());
+            Log::error('Professional Development Upload Failed: ' . $e->getMessage());
             return response()->json(['message' => 'An unexpected error occurred. Please try again.'], 500);
         }
     }
@@ -229,6 +232,8 @@ class ProfessionalDevelopmentController extends Controller
             }
             $professionalDevelopment->delete();
             return response()->json(['message' => 'Item deleted successfully.']);
+        } catch (GoogleAccountDisconnectedException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
         } catch (\Exception $e) {
             Log::error('Professional Development Deletion Failed: ' . $e->getMessage());
             return response()->json(['message' => 'Failed to delete the item. Please try again later.'], 500);

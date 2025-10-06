@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
@@ -47,27 +48,31 @@ class SocialiteLoginController extends Controller
             return redirect()->route('signin-page')->with('error', 'Google authentication failed. Please try again.');
         }
 
-        // Find an existing user by their email.
+        $tokenInfoResponse = Http::get('https://www.googleapis.com/oauth2/v3/tokeninfo', [
+            'access_token' => $googleUser->token,
+        ]);
+
+        $grantedScopes = $tokenInfoResponse->successful() ? explode(' ', $tokenInfoResponse->json()['scope']) : [];
+        $driveScopeGranted = in_array('https://www.googleapis.com/auth/drive.file', $grantedScopes);
+
         $user = User::where('email', $googleUser->getEmail())->first();
 
         if ($user) {
-            // If the user exists, update their information.
             $user->update([
                 'name' => $googleUser->getName(),
                 'google_id' => $googleUser->getId(),
                 'avatar' => preg_replace('/=s\d+(-c)?$/', '=s400-c', $googleUser->getAvatar()),
-                'google_token' => $googleUser->token,
-                'google_refresh_token' => $googleUser->refreshToken ?? $user->google_refresh_token, // Keep old refresh token if a new one isn't provided
+                'google_token' => $driveScopeGranted ? $googleUser->token : null,
+                'google_refresh_token' => $driveScopeGranted ? ($googleUser->refreshToken ?? $user->google_refresh_token) : null,
             ]);
         } else {
-            // If the user does not exist, create a new one.
             $user = User::create([
                 'email' => $googleUser->getEmail(),
                 'name' => $googleUser->getName(),
                 'google_id' => $googleUser->getId(),
                 'avatar' => preg_replace('/=s\d+(-c)?$/', '=s400-c', $googleUser->getAvatar()),
-                'google_token' => $googleUser->token,
-                'google_refresh_token' => $googleUser->refreshToken,
+                'google_token' => $driveScopeGranted ? $googleUser->token : null,
+                'google_refresh_token' => $driveScopeGranted ? $googleUser->refreshToken : null,
                 'password' => bcrypt(Str::random(40)),
             ]);
         }
@@ -76,7 +81,11 @@ class SocialiteLoginController extends Controller
 
         Auth::login($user, true);
 
-        // Check for the session flag and redirect to settings if present. This takes priority.
+        if ($request->session()->get('redirect_to_settings') && !$driveScopeGranted) {
+            $request->session()->forget('redirect_to_settings');
+            return redirect()->route('system-settings')->with('error', 'Google Drive access was not granted. Please check the box to allow file access.');
+        }
+
         if ($request->session()->pull('redirect_to_settings')) {
             return redirect()->route('system-settings')->with('success', 'Google Drive has been reconnected successfully!');
         }
@@ -84,17 +93,14 @@ class SocialiteLoginController extends Controller
         /** @var \App\Models\User $loggedInUser */
         $loggedInUser = Auth::user();
 
-        // Redirect Admins to the Admin Dashboard.
         if ($loggedInUser->hasRole('admin')) {
             return redirect()->route('admin.dashboard');
         }
 
-        // Redirect Evaluators to their applications queue.
         if ($loggedInUser->hasRole('evaluator')) {
             return redirect()->route('evaluator.applications.dashboard');
         }
 
-        // Default redirect for regular users (instructors).
         return redirect()->route('profile-page');
     }
 

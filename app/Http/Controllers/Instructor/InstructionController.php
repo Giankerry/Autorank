@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Instructor;
 
+use App\Exceptions\GoogleAccountDisconnectedException;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\ManagesGoogleDrive;
 use App\Models\Instruction;
@@ -135,7 +136,6 @@ class InstructionController extends Controller
             $criterion = $request->input('criterion');
             $validatedData = $this->validateRequest($request, $criterion, $user->id);
 
-            // Get or create the draft application for this evaluation cycle
             $draftApplication = $this->findOrCreateDraftApplication();
 
             $kraFolderName = 'KRA I: Instruction';
@@ -147,7 +147,7 @@ class InstructionController extends Controller
 
             $dataToCreate = [
                 'user_id' => $user->id,
-                'application_id' => $draftApplication->id, // Link to the application cycle
+                'application_id' => $draftApplication->id,
                 'criterion' => $criterion,
             ];
 
@@ -168,6 +168,8 @@ class InstructionController extends Controller
             return response()->json(['success' => true, 'message' => 'Successfully uploaded!'], 201);
         } catch (ValidationException $e) {
             return response()->json(['message' => 'The given data was invalid.', 'errors' => $e->errors()], 422);
+        } catch (GoogleAccountDisconnectedException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
         } catch (\Exception $e) {
             Log::error('Instruction Upload Failed: ' . $e->getMessage());
             return response()->json(['message' => 'An unexpected error occurred. Please try again.'], 500);
@@ -241,6 +243,8 @@ class InstructionController extends Controller
             }
             $instruction->delete();
             return response()->json(['message' => 'Item deleted successfully.']);
+        } catch (GoogleAccountDisconnectedException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
         } catch (\Exception $e) {
             Log::error('Instruction Deletion Failed: ' . $e->getMessage());
             return response()->json(['message' => 'Failed to delete the item. Please try again later.'], 500);

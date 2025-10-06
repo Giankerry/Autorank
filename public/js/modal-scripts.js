@@ -86,10 +86,18 @@ document.addEventListener('DOMContentLoaded', () => {
             let files = [];
             let currentIndex = 0;
             let activeFetchController = null;
-            const PREVIEWABLE_EXTENSIONS = ['pdf','png','jpg','jpeg','gif','webp','txt'];
+            let currentObjectUrl = null;
+            const PREVIEWABLE_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'txt'];
 
             const escapeHtml = (str) => str.replace(/[&<>"']/g, (m) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' })[m]);
             const showLoader = (on = true) => loader && (loader.style.display = on ? 'flex' : 'none');
+
+            const showFeedback = (message, isError = true) => {
+                if (feedbackContainer) {
+                    feedbackContainer.innerHTML = `<p class="${isError ? 'alert-danger' : 'alert-info'}">${message}</p>`;
+                    feedbackContainer.style.display = 'flex';
+                }
+            };
 
             const renderDetails = (details = {}) => {
                 if (!detailsContent) return;
@@ -102,28 +110,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 detailsContent.innerHTML = html || '<p class="text-muted">No details available.</p>';
             };
 
-            const showFile = (index) => {
+            const showFile = async (index) => {
                 if (!files || index < 0 || index >= files.length) return;
                 currentIndex = index;
+
                 showLoader(true);
                 iframe.style.display = 'none';
                 feedbackContainer.style.display = 'none';
+                if (currentObjectUrl) {
+                    URL.revokeObjectURL(currentObjectUrl);
+                    currentObjectUrl = null;
+                }
+                iframe.src = 'about:blank';
 
                 const file = files[currentIndex];
                 const isPreviewable = PREVIEWABLE_EXTENSIONS.includes(file.ext);
                 
                 if (isPreviewable) {
-                    iframe.src = (file.ext === 'pdf') ? `${file.url}#toolbar=1` : file.url;
-                    iframe.onload = () => { showLoader(false); iframe.style.display = 'block'; };
+                    try {
+                        const response = await fetch(file.url);
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.message || `File could not be loaded (status: ${response.status})`);
+                        }
+                        const blob = await response.blob();
+                        currentObjectUrl = URL.createObjectURL(blob);
+                        iframe.src = (file.ext === 'pdf') ? `${currentObjectUrl}#toolbar=1` : currentObjectUrl;
+                        iframe.onload = () => {
+                            showLoader(false);
+                            iframe.style.display = 'block';
+                        };
+                    } catch (error) {
+                        showLoader(false);
+                        showFeedback(error.message, true);
+                    }
                 } else {
                     showLoader(false);
-                    if (downloadBtn) {
-                        downloadBtn.href = file.url;
-                        downloadBtn.download = file.name;
-                    }
-                    if (feedbackContainer) {
-                        feedbackContainer.style.display = 'flex';
-                    }
+                    if (downloadBtn) downloadBtn.href = file.url;
+                    feedbackContainer.innerHTML = `<p>This file type cannot be previewed directly.</p><a href="${file.url}" class="btn btn-primary" download>Download File</a>`;
+                    feedbackContainer.style.display = 'flex';
                 }
 
                 if (counter) counter.textContent = `${currentIndex + 1} / ${files.length}`;
@@ -136,6 +161,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 fileViewerModal.classList.add('modal-container--hidden');
                 document.body.classList.remove('modal-open');
                 if (iframe) iframe.src = 'about:blank';
+                if (currentObjectUrl) {
+                    URL.revokeObjectURL(currentObjectUrl);
+                    currentObjectUrl = null;
+                }
                 if (activeFetchController) { try { activeFetchController.abort(); } catch(e){} }
             };
 
@@ -153,15 +182,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 try {
                     const res = await fetch(infoUrl, { headers: { 'X-Requested-With':'XMLHttpRequest' }, signal: activeFetchController.signal });
-                    if (!res.ok) throw new Error(`Server responded with ${res.status}`);
                     const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'Could not load file information.');
                     
-                    const normalize = (f) => {
-                        const url = f.file_url || f.viewUrl;
-                        const name = f.file_name || f.filename || 'file';
-                        return { url, name, ext: (name.split('.').pop() || '').toLowerCase() };
-                    };
-                    
+                    const normalize = (f) => ({ url: f.file_url, name: f.file_name, ext: (f.file_name.split('.').pop() || '').toLowerCase() });
                     files = (data.files || []).map(normalize).filter(f => f.url);
                     const details = data.details || data.recordData || {};
                     
@@ -170,20 +194,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         showFile(0);
                     } else {
                         showLoader(false);
-                        // Use the feedback container for the "no files" message.
-                        if (feedbackContainer) {
-                            feedbackContainer.innerHTML = '<p class="alert-info">No files are associated with this record.</p>';
-                            feedbackContainer.style.display = 'flex';
-                        }
+                        showFeedback("No files are associated with this record.", false);
                     }
                 } catch (err) {
                     if (err.name !== 'AbortError') {
-                        console.error('Error fetching files:', err);
                         showLoader(false);
-                        if (feedbackContainer) {
-                            feedbackContainer.innerHTML = `<p class="alert-danger">Could not load file information. Please try again.</p>`;
-                            feedbackContainer.style.display = 'flex';
-                        }
+                        showFeedback(err.message, true);
                     }
                 } finally {
                     activeFetchController = null;

@@ -26,6 +26,17 @@
 </style>
 @endpush
 
+@if(session('success'))
+<div class="server-alert-success">
+    {{ session('success') }}
+</div>
+@endif
+@if(session('error'))
+<div class="server-alert-danger">
+    {{ session('error') }}
+</div>
+@endif
+
 <div class="header">
     <div>
         <div class="header-text">
@@ -105,7 +116,7 @@
                     <div class="role-modal-content-body">
                         <div class="form-group">
                             <label class="form-group-title" data-label="Score">Score *</label>
-                            <input type="number" name="score" step="0.01" min="0" placeholder="0.00" required>
+                            <input type="number" name="score" step="0.01" min="0" placeholder="0.00" style="color-scheme: dark;" required>
                         </div>
                         <div class="modal-messages mt-2"></div>
                     </div>
